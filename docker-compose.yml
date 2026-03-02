@@ -1,0 +1,63 @@
+services:
+
+  # ── Stego Tools Sandbox (NEVER exposed to host network) ───────────────────
+  tools:
+    build:
+      context: ./docker
+      dockerfile: Dockerfile.tools
+    container_name: stegoforge-tools
+    restart: unless-stopped
+    volumes:
+      - uploads_data:/data
+    networks:
+      - stegonet
+    command: ["tail", "-f", "/dev/null"]
+
+  # ── FastAPI Backend ───────────────────────────────────────────��────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: stegoforge-backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    volumes:
+      - uploads_data:/data
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./backend:/app
+    environment:
+      - TOOLS_CONTAINER=stegoforge-tools
+      - UPLOAD_DIR=/data/uploads
+      - MAX_UPLOAD_MB=50
+    depends_on:
+      - tools
+    networks:
+      - stegonet
+
+  # ── React + Vite Frontend ──────────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: stegoforge-frontend
+    restart: unless-stopped
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - VITE_API_URL=http://localhost:8000
+      - VITE_WS_URL=ws://localhost:8000
+    depends_on:
+      - backend
+    networks:
+      - stegonet
+
+volumes:
+  uploads_data:
+
+networks:
+  stegonet:
+    driver: bridge

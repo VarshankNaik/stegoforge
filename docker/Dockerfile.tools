@@ -1,0 +1,118 @@
+FROM ubuntu:24.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV TZ=UTC
+
+# ─── System Update ────────────────────────────────────────────────────────────
+RUN apt-get update && apt-get upgrade -y
+
+# ─── Core File Analysis ───────────────────────────────────────────────────────
+RUN apt-get install -y \
+    file \
+    binutils \
+    xxd \
+    bsdmainutils \
+    coreutils \
+    util-linux \
+    && apt-get clean
+
+# ─── Metadata Tools ───────────────────────────────────────────────────────────
+RUN apt-get install -y \
+    libimage-exiftool-perl \
+    imagemagick \
+    mediainfo \
+    && apt-get clean
+
+# ─── File Extraction & Carving ────────────────────────────────────────────────
+RUN apt-get install -y \
+    binwalk \
+    foremost \
+    p7zip-full \
+    unzip \
+    && apt-get clean
+
+# ─── Image Steganography ──────────────────────────────────────────────────────
+RUN apt-get install -y \
+    steghide \
+    outguess \
+    pngcheck \
+    && apt-get clean
+
+# ─── Java (for stegsolve etc) ─────────────────────────────────────────────────
+RUN apt-get install -y \
+    default-jdk-headless \
+    && apt-get clean
+
+# ─── Audio Tools ──────────────────────────────────────────────────────────────
+RUN apt-get install -y \
+    sox \
+    ffmpeg \
+    && apt-get clean
+
+# ─── PDF Tools ────────────────────────────────────────────────────────────────
+RUN apt-get install -y \
+    poppler-utils \
+    qpdf \
+    pdfcrack \
+    && apt-get clean
+
+# ─── Password / Cracking ──────────────────────────────────────────────────────
+RUN apt-get install -y \
+    john \
+    fcrackzip \
+    && apt-get clean
+
+# ─── Network Tools ────────────────────────────────────────────────────────────
+RUN apt-get install -y \
+    tcpflow \
+    tshark \
+    && apt-get clean
+
+# ─── Encoding / Misc ──────────────────────────────────────────────────────────
+RUN apt-get install -y \
+    openssl \
+    zbar-tools \
+    mat2 \
+    && apt-get clean
+
+# ─── Python + pip tools ───────────────────────────────────────────────────────
+RUN apt-get install -y \
+    python3 \
+    python3-pip \
+    python3-venv \
+    python3-dev \
+    && apt-get clean
+
+RUN pip3 install --break-system-packages \
+    pillow \
+    numpy \
+    scipy \
+    matplotlib \
+    pdfminer.six \
+    python-magic \
+    stegcracker
+
+# ─── Ruby + zsteg ─────────────────────────────────────────────────────────────
+RUN apt-get install -y \
+    ruby \
+    ruby-dev \
+    build-essential \
+    && apt-get clean \
+    && gem install zsteg
+
+# ─── Wordlists ────────────────────────────────────────────────────────────────
+RUN apt-get install -y wordlists 2>/dev/null || true && \
+    [ -f /usr/share/wordlists/rockyou.txt.gz ] && \
+    gunzip /usr/share/wordlists/rockyou.txt.gz 2>/dev/null || true
+
+# ─── Final cleanup ────────────────────────────────────────────────────────────
+RUN apt-get autoremove -y && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# ─── Upload directory ─────────────────────────────────────────────────────────
+RUN mkdir -p /data/uploads
+
+WORKDIR /data
+
+CMD ["tail", "-f", "/dev/null"]
